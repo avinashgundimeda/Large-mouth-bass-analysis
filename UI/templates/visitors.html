@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visitor Analytics - Litopenaeus Vannamei Analysis</title>
+<link rel="stylesheet" href="/UI/static/css/style.css">  
+</head>
+<body data-theme="light">
+<div class="app-shell">
+
+  <!-- ============================== HEADER ============================== -->
+  <header class="site-header">
+    <div class="header-text">
+      <h1>VISITOR <span class="accent">ANALYTICS</span></h1>
+      <p class="subtitle">Real-time traffic analysis and client visitor metrics for the CV/ML laboratory platform.</p>
+      <div class="species-badge">
+        Traffic Monitoring System
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================== STAT CARDS ============================== -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">TOTAL PAGE VISITS</div>
+      <div class="stat-value" id="statTotalVisits">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">UNIQUE CLIENT IPS</div>
+      <div class="stat-value" id="statUniqueVisits">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">LAST VISIT TIME</div>
+      <div class="stat-value" id="statLastVisit" style="font-size: 14px; font-family: var(--font-mono); font-weight: normal; min-height: 38px; display: flex; align-items: center;">—</div>
+    </div>
+  </section>
+
+  <!-- ============================== VISITORS LIST ============================== -->
+  <section class="results-section">
+    <div class="results-header">
+      <h2>RECENT CLIENT VISITS</h2>
+      <span id="visitCountLabel">0 clients logged</span>
+    </div>
+    
+    <div class="dashboard-card" style="padding: 0; overflow: hidden; margin-top: 16px;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: var(--font-mono); font-size: 13px;">
+        <thead>
+          <tr style="background-color: var(--border-light); border-bottom: 1px solid var(--border-color); color: var(--text-primary);">
+            <th style="padding: 14px 20px; font-weight: 700;">IP ADDRESS</th>
+            <th style="padding: 14px 20px; font-weight: 700;">TOTAL HITS</th>
+            <th style="padding: 14px 20px; font-weight: 700;">FIRST SEEN</th>
+            <th style="padding: 14px 20px; font-weight: 700;">LAST SEEN</th>
+          </tr>
+        </thead>
+        <tbody id="visitorsTableBody">
+          <tr>
+            <td colspan="4" style="padding: 40px 20px; text-align: center; color: var(--text-faint);">
+              Loading visitor metrics...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Navigation Back -->
+    <div style="margin-top: 28px;">
+      <a href="/" class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; max-width: 240px;">
+        <span class="btn-icon">◁</span> BACK TO DASHBOARD
+      </a>
+    </div>
+  </section>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer class="site-footer">
+    <div class="brand">Ram Kurapati</div>
+    <div class="links">
+      <span><a href="/visitors">Visitor Counter</a></span>
+      <span>·</span>
+      <span><a href="">GitHub</a></span>
+      <span id="footerYear"></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById("footerYear").textContent = "© " + new Date().getFullYear();
+
+  async function loadVisitorData() {
+    try {
+      const res = await fetch("/api/visitors");
+      const data = await res.json();
+
+      document.getElementById("statTotalVisits").textContent = data.total_visits || 0;
+      document.getElementById("statUniqueVisits").textContent = data.unique_visits || 0;
+
+      // Find last visit time
+      let lastVisit = "—";
+      if (data.visitors && data.visitors.length > 0) {
+        // Sort by last visit descending
+        const sorted = [...data.visitors].sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+        lastVisit = new Date(sorted[0].last_visit).toLocaleString();
+      }
+      document.getElementById("statLastVisit").textContent = lastVisit;
+
+      // Render table
+      const tbody = document.getElementById("visitorsTableBody");
+      const label = document.getElementById("visitCountLabel");
+      
+      tbody.innerHTML = "";
+      
+      if (!data.visitors || data.visitors.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="padding: 40px 20px; text-align: center; color: var(--text-faint);">
+              No client logs registered.
+            </td>
+          </tr>`;
+        label.textContent = "0 clients logged";
+        return;
+      }
+
+      label.textContent = `${data.visitors.length} client${data.visitors.length > 1 ? 's' : ''} logged`;
+
+      // Sort visitors list by last_visit descending
+      const visitorsSorted = [...data.visitors].sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+
+      visitorsSorted.forEach(v => {
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid var(--border-light)";
+        tr.style.color = "var(--text-secondary)";
+        
+        tr.innerHTML = `
+          <td style="padding: 14px 20px; color: var(--text-primary); font-weight: 500;">${v.ip}</td>
+          <td style="padding: 14px 20px;">${v.hits}</td>
+          <td style="padding: 14px 20px; font-size: 12px;">${new Date(v.first_visit).toLocaleString()}</td>
+          <td style="padding: 14px 20px; font-size: 12px;">${new Date(v.last_visit).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+    } catch (err) {
+      console.error("Failed to load visitor statistics:", err);
+      const tbody = document.getElementById("visitorsTableBody");
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="padding: 40px 20px; text-align: center; color: var(--danger);">
+            Error loading visitor data.
+          </td>
+        </tr>`;
+    }
+  }
+
+  // Load data immediately on page load
+  loadVisitorData();
+</script>
+</body>
+</html>

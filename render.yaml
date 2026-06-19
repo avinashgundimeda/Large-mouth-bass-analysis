@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: litopenaeus-vannamei-analysis
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      # To enable persistent visitor statistics (preserves data across restarts),
+      # uncomment the VISITORS_FILE_PATH variable and the disk definition block below.
+      # (Note: Persistent disks are a paid feature on Render and require upgrading from the Free Tier).
+      #
+      # - key: VISITORS_FILE_PATH
+      #   value: /data/visitor_data.json
+
+    # disk:
+    #   name: data
+    #   mountPath: /data
+    #   sizeGB: 1

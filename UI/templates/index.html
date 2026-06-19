@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Litopenaeus Vannamei Analysis</title>
+<link rel="stylesheet" href="/UI/static/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body data-theme="light">
+<div class="app-shell">
+
+  <!-- ============================== HEADER ============================== -->
+  <header class="site-header">
+    <div class="header-text">
+      <h1>LITOPENAEUS VANNAMEI <span class="accent">ANALYSIS</span></h1>
+      <p class="subtitle">AI-powered detection, length measurement, and weight estimation using computer vision and deep learning.</p>
+      <div class="species-badge">
+        Pacific White Shrimp — L. vannamei
+      </div>
+    </div>
+    
+    <!-- Hidden elements required by app.js to prevent JavaScript runtime errors -->
+    <div style="display: none;">
+      <button id="themeLight" class="active" title="Light mode">☀</button>
+      <button id="themeDark" title="Dark mode">●</button>
+      <button id="exportCsvBtn" disabled>CSV</button>
+      <button id="exportPdfBtn" disabled>PDF</button>
+    </div>
+  </header>
+
+  <!-- ============================== STAT CARDS ============================== -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">TOTAL DETECTED</div>
+      <div class="stat-value" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">AVG LENGTH</div>
+      <div class="stat-value" id="statLength">— <span class="unit">mm</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">AVG WEIGHT</div>
+      <div class="stat-value" id="statWeight">— <span class="unit">g</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TOTAL BIOMASS</div>
+      <div class="stat-value" id="statBiomass">— <span class="unit">g</span></div>
+    </div>
+  </section>
+
+  <!-- ============================== 3-COLUMN ANALYTICS & UPLOAD ROW ============================== -->
+  <section class="dashboard-row">
+    
+    <!-- Column 1: Length Distribution Chart -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h2>LENGTH DISTRIBUTION</h2>
+        <span class="badge">HISTOGRAM</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="lengthChart"></canvas>
+          <div class="chart-empty" id="lengthChartEmpty">Upload images to generate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: Weight Distribution Chart -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h2>WEIGHT DISTRIBUTION</h2>
+        <span class="badge">HISTOGRAM</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="weightChart"></canvas>
+          <div class="chart-empty" id="weightChartEmpty">Upload images to generate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Upload Panel -->
+    <div class="dashboard-card upload-card">
+      <div class="card-header">
+        <h2>UPLOAD IMAGES</h2>
+        <span class="badge">ANALYSIS</span>
+      </div>
+      <div class="card-body">
+        <div class="dropzone" id="dropzone">
+          <div class="upload-icon-box">
+            <!-- Outlined upward arrow in square box -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <h3>DROP IMAGES HERE</h3>
+          <p>or click to browse</p>
+          <input type="file" id="fileInput" multiple accept="image/png,image/jpeg,image/bmp,image/webp">
+        </div>
+
+        <!-- Selected files container / status -->
+        <div class="file-status-box">
+          <div class="file-status-header">
+            <span id="fileCountLabel">No files selected</span>
+            <span class="dash-icon">—</span>
+          </div>
+          <div class="preview-grid-wrapper">
+            <div class="preview-grid" id="previewGrid"></div>
+          </div>
+        </div>
+
+        <!-- Progress wrap -->
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-label">
+            <span id="progressStage">Ready</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <!-- Calibration row (hidden but functional) -->
+        <div style="display: none;">
+          <input type="number" id="calibrationInput" value="0.25">
+        </div>
+
+        <!-- Buttons -->
+        <div class="upload-actions">
+          <button class="btn-primary" id="analyzeBtn" disabled>
+            <span class="btn-icon">▷</span> ANALYZE
+          </button>
+          <button class="btn-secondary" id="resetBtn">
+            <span class="btn-icon">↺</span> RESET
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================== RESULTS ============================== -->
+  <section class="results-section">
+    <div class="results-header">
+      <h2>DETECTION RESULTS</h2>
+      <span id="resultsHint">0 images processed</span>
+    </div>
+    <div id="resultsContainer">
+      <div class="results-empty">
+        <div class="icon"></div>
+        Upload sample images and click "Analyze Samples" to see detections,<br>bounding boxes, measured length, predicted weight and confidence.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer class="site-footer">
+    <div class="brand">Ram Kurapati</div>
+    <div class="links">
+      <span><a href="/visitors">Visitor Counter</a></span>
+      <span>·</span>
+      <span><a href="">GitHub</a></span>
+      <span id="footerYear"></span>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon">
+    <svg class="icon-error" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <svg class="icon-success" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+  </div>
+  <div class="toast-content">
+    <div class="toast-title" id="toastTitle">Notification</div>
+    <div class="toast-message" id="toastMsg"></div>
+  </div>
+  <button class="toast-close" id="toastCloseBtn" title="Dismiss">&times;</button>
+</div>
+
+<script src="/UI/static/js/app.js"></script>
+</body>
+</html>
